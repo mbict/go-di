@@ -1,12 +1,8 @@
-module github.com/mbict/go-di
+module github.com/mbict/go-di/v2
 
-go 1.25.1
+go 1.27
 
-require (
-	github.com/mbict/go-requestbus v0.0.0-20250906202548-b66a86e0bfd5
-	github.com/stretchr/testify v1.11.1
-	go.uber.org/dig v1.19.0
-)
+require github.com/stretchr/testify v1.10.0
 
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
