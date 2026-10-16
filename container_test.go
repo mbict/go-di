@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type dep1 struct{ A int }
@@ -852,7 +853,7 @@ func TestInvokeE_ErrorStackTracePointsToCallsite(t *testing.T) {
 		return errors.New("invokee stacktrace error")
 	})
 
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Contains(t, err.Error(), "invokee stacktrace error")
 	assertFirstStackFrameContains(t, err, "TestInvokeE_ErrorStackTracePointsToCallsite")
 }
@@ -901,7 +902,7 @@ func TestCircularDependency_InvokeE_DetectedAndPrevented(t *testing.T) {
 		called = true
 	})
 
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.False(t, called)
 	assert.Contains(t, err.Error(), "could not invoke")
 	assert.Contains(t, err.Error(), "circular dependency detected")
@@ -1207,7 +1208,11 @@ func TestHas(t *testing.T) {
 	assert.NoError(t, c.Provides(Instance(instance{})))
 	_ = c.Get[instance]()
 
-	assert.True(t, c.Has(reflect.TypeFor[provided]()), "factory, even with an unresolvable dependency")
-	assert.True(t, c.Has(reflect.TypeFor[instance]()), "constructed instance")
-	assert.False(t, c.Has(reflect.TypeFor[missing]()))
+	assert.True(t, c.Has[provided](), "factory, even with an unresolvable dependency")
+	assert.True(t, c.Has[instance](), "constructed instance")
+	assert.False(t, c.Has[missing]())
+
+	assert.True(t, c.HasType(reflect.TypeFor[provided]()))
+	assert.True(t, c.HasType(reflect.TypeFor[instance]()))
+	assert.False(t, c.HasType(reflect.TypeFor[missing]()))
 }

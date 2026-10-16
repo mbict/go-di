@@ -69,10 +69,16 @@ func (c *Container) load(t reflect.Type) (reflect.Value, error) {
 	return instance, nil
 }
 
-// Has reports whether t was provided, as an instance or a factory, without
+// Has reports whether T was provided, as an instance or a factory, without
+// constructing it. See HasType.
+func (c *Container) Has[T any]() bool {
+	return c.HasType(reflect.TypeFor[T]())
+}
+
+// HasType reports whether t was provided, as an instance or a factory, without
 // constructing it. Unlike resolving and checking ErrNotFound, it cannot
 // confuse a missing t with a missing dependency of t's factory.
-func (c *Container) Has(t reflect.Type) bool {
+func (c *Container) HasType(t reflect.Type) bool {
 	if _, ok := c.instances[t]; ok {
 		return true
 	}
