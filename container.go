@@ -24,6 +24,16 @@ func New(init ...func(container *Container) error) (*Container, error) {
 
 type Finalizer func()
 
+// ErrNotFound is wrapped by every error caused by a type that was never
+// provided, so callers can tell a missing registration from a failing factory.
+var ErrNotFound = errors.New("di: type not provided")
+
+// notFoundError keeps the historical message while matching ErrNotFound.
+type notFoundError struct{ t reflect.Type }
+
+func (e notFoundError) Error() string        { return "could not find a factory for type " + e.t.String() }
+func (e notFoundError) Is(target error) bool { return target == ErrNotFound }
+
 type Container struct {
 	factories  map[reflect.Type]func() error
 	instances  map[reflect.Type]reflect.Value
@@ -40,7 +50,7 @@ func (c *Container) load(t reflect.Type) (reflect.Value, error) {
 
 	factory, found := c.factories[t]
 	if !found {
-		return reflect.Value{}, errors.New("could not find a factory for type " + t.String())
+		return reflect.Value{}, notFoundError{t: t}
 	}
 
 	c.loading[t] = true
@@ -57,6 +67,23 @@ func (c *Container) load(t reflect.Type) (reflect.Value, error) {
 	}
 
 	return instance, nil
+}
+
+// Has reports whether T was provided, as an instance or a factory, without
+// constructing it. See HasType.
+func (c *Container) Has[T any]() bool {
+	return c.HasType(reflect.TypeFor[T]())
+}
+
+// HasType reports whether t was provided, as an instance or a factory, without
+// constructing it. Unlike resolving and checking ErrNotFound, it cannot
+// confuse a missing t with a missing dependency of t's factory.
+func (c *Container) HasType(t reflect.Type) bool {
+	if _, ok := c.instances[t]; ok {
+		return true
+	}
+	_, ok := c.factories[t]
+	return ok
 }
 
 func (c *Container) Get[T any]() T {
@@ -179,9 +206,6 @@ func (c *Container) Provides(factory any) error {
 			// Load the dependency
 			argVal, err := c.load(argType)
 			if err != nil {
-
-				fmt.Println("could not load", argType.String())
-
 				return err
 			}
 
