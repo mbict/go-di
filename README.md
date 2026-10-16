@@ -116,6 +116,7 @@ func main() {
 - `Provides(factory any) error`
 - `Get[T any]() T`
 - `GetE[T any]() (T, error)`
+- `Has(t reflect.Type) bool`
 - `Invoke(fn any)`
 - `InvokeE(fn any) error`
 - `Result[T any](fn any) T`
@@ -132,6 +133,7 @@ func main() {
 | `Provides` | Register a factory function that produces one or more types. |
 | `Get[T]` | Resolve `T` from the container. Panics on error. |
 | `GetE[T]` | Resolve `T` from the container. Returns error with stack trace. |
+| `Has` | Report whether a type was provided, without constructing it. |
 | `Invoke` | Call `fn` with auto-resolved arguments. Panics on error. |
 | `InvokeE` | Call `fn` with auto-resolved arguments. Returns error with stack trace. |
 | `Result[T]` | Call `fn` with auto-resolved arguments and return its first result as `T`. Panics on error. |
@@ -283,4 +285,5 @@ func(dep1, dep2, dep3...) (T, error)
 - `GetE`, `InvokeE`, and `ResultE` return wrapped errors with an embedded stack trace pointing to the callsite.
 - `Get`, `Invoke`, and `Result` panic on errors.
 - Circular dependencies are detected during argument resolution.
+- Errors caused by a type that was never provided match `ErrNotFound` (`errors.Is(err, di.ErrNotFound)`), also when the missing type is a dependency of a factory. Use `Has` to check a single type without resolving its dependencies.
 

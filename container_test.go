@@ -3,6 +3,7 @@ package di
 import (
 	"errors"
 	"fmt"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -1168,4 +1169,45 @@ func TestAlias_Helper(t *testing.T) {
 
 	got := mustGetE[aliasGreeter](t, c)
 	assert.Equal(t, "hello", got.Greet())
+}
+
+func TestErrNotFound(t *testing.T) {
+	type missing struct{}
+	type dependent struct{}
+
+	t.Run("missing type", func(t *testing.T) {
+		c := mustNew(t)
+		_, err := c.GetE[missing]()
+		assert.ErrorIs(t, err, ErrNotFound)
+	})
+
+	t.Run("missing dependency of a factory", func(t *testing.T) {
+		c := mustNew(t)
+		assert.NoError(t, c.Provides(func(missing) dependent { return dependent{} }))
+		_, err := c.GetE[dependent]()
+		assert.ErrorIs(t, err, ErrNotFound)
+	})
+
+	t.Run("failing factory is not ErrNotFound", func(t *testing.T) {
+		c := mustNew(t)
+		assert.NoError(t, c.Provides(func() (dependent, error) { return dependent{}, errors.New("boom") }))
+		_, err := c.GetE[dependent]()
+		assert.Error(t, err)
+		assert.NotErrorIs(t, err, ErrNotFound)
+	})
+}
+
+func TestHas(t *testing.T) {
+	type provided struct{}
+	type instance struct{}
+	type missing struct{}
+
+	c := mustNew(t)
+	assert.NoError(t, c.Provides(func(missing) provided { return provided{} }))
+	assert.NoError(t, c.Provides(Instance(instance{})))
+	_ = c.Get[instance]()
+
+	assert.True(t, c.Has(reflect.TypeFor[provided]()), "factory, even with an unresolvable dependency")
+	assert.True(t, c.Has(reflect.TypeFor[instance]()), "constructed instance")
+	assert.False(t, c.Has(reflect.TypeFor[missing]()))
 }
