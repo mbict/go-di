@@ -142,7 +142,7 @@ func main() {
 | `ResultE[T]` | Call `fn` with auto-resolved arguments and return its first result as `T`. Returns error with stack trace. |
 | `Instance[T]` | Helper that turns an existing value into a zero-arg provider function. |
 | `Alias[T, A]` | Helper that exposes a provided concrete type `T` as another type `A` such as an interface. |
-| `Finalize` | Run all registered `Finalizer` callbacks and clear resolved instances. |
+| `Finalize` | Run all registered `Finalizer` callbacks, last constructed first, and clear resolved instances. |
 
 ## Supported `Provides` Signatures
 

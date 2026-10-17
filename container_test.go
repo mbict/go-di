@@ -69,6 +69,22 @@ func TestProvides_SupportedSignatures(t *testing.T) {
 		assert.True(t, finalized)
 	})
 
+	t.Run("Finalize runs last constructed first", func(t *testing.T) {
+		type pool struct{}
+		type worker struct{}
+		c := mustNew(t)
+		var order []string
+		assert.NoError(t, c.Provides(func() (pool, Finalizer) {
+			return pool{}, func() { order = append(order, "pool") }
+		}))
+		assert.NoError(t, c.Provides(func(pool) (worker, Finalizer) {
+			return worker{}, func() { order = append(order, "worker") }
+		}))
+		mustGetE[worker](t, c)
+		c.Finalize()
+		assert.Equal(t, []string{"worker", "pool"}, order)
+	})
+
 	t.Run("func() (type1, type2, type3...)", func(t *testing.T) {
 		type out1 struct{ V int }
 		type out2 struct{ V string }

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"slices"
 	"sync"
 )
 
@@ -392,10 +393,13 @@ func (c *Container) make[T any](fn any) (T, error) {
 	return results[0].Interface().(T), nil
 }
 
+// Finalize runs the finalizers in reverse construction order, so a value is
+// finalized before the dependencies it was built from (a worker pool drains
+// before the database pool it uses is closed), then clears all instances.
 func (c *Container) Finalize() {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	for _, f := range c.finalizers {
+	for _, f := range slices.Backward(c.finalizers) {
 		f()
 	}
 	c.finalizers = nil
